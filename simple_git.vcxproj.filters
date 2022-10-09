@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="simple_git">
+      <UniqueIdentifier>{47de36e3-573a-4241-8d7e-7bb613a33967}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private">
+      <UniqueIdentifier>{88433ab3-b8fa-409e-b996-1d79a404bffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public">
+      <UniqueIdentifier>{21f18f03-e584-473d-9b86-d194b0fe1b68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\array">
+      <UniqueIdentifier>{ff6b5df6-1c2e-4e19-9d21-cdb02b80993a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\guide">
+      <UniqueIdentifier>{e60b9d54-5299-46aa-8162-768ee14a543e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\log">
+      <UniqueIdentifier>{b25446ca-951d-4a85-8e07-80f8f9e169c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\protocal">
+      <UniqueIdentifier>{287b96a9-d2a6-4f34-bfe3-291cf914caf2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\util">
+      <UniqueIdentifier>{8be9c068-764e-4dc7-917d-e470986d52b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\private\window">
+      <UniqueIdentifier>{39c00d38-2bf7-4cc6-9bcd-c35e9412a2b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\array">
+      <UniqueIdentifier>{1e1b8de3-87af-4712-a844-43470ff47cbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\guide">
+      <UniqueIdentifier>{59d8fbdd-a49c-4e63-b47e-7eb8adb68bd5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\log">
+      <UniqueIdentifier>{cd88c1d2-73ec-4265-9cb1-66b841517753}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\protocal">
+      <UniqueIdentifier>{0191ed46-a6ee-4461-a31c-63f55e1abdc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\util">
+      <UniqueIdentifier>{b52cdfaa-b1be-4ad1-a4b5-b14fffb6f98d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="simple_git\public\window">
+      <UniqueIdentifier>{342cfdaa-d7df-4df5-a15a-672cb8bf1595}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="simple_git\private\window\window_setting.c">
+      <Filter>simple_git\private\window</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\window\window_register.c">
+      <Filter>simple_git\private\window</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\util\file_util.c">
+      <Filter>simple_git\private\util</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\util\path_util.c">
+      <Filter>simple_git\private\util</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\protocal\protocal.c">
+      <Filter>simple_git\private\protocal</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\guide\guide.c">
+      <Filter>simple_git\private\guide</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\log\log.c">
+      <Filter>simple_git\private\log</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\util\string_util.c">
+      <Filter>simple_git\private\util</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\private\array\string_array.c">
+      <Filter>simple_git\private\array</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_git\Source.c">
+      <Filter>simple_git</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="simple_git\public\util\file_util.h">
+      <Filter>simple_git\public\util</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\util\path_util.h">
+      <Filter>simple_git\public\util</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\util\string_util.h">
+      <Filter>simple_git\public\util</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\protocal\protocal.h">
+      <Filter>simple_git\public\protocal</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\protocal\protocal_type.h">
+      <Filter>simple_git\public\protocal</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\guide\guide.h">
+      <Filter>simple_git\public\guide</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\log\log.h">
+      <Filter>simple_git\public\log</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\window\window_register.h">
+      <Filter>simple_git\public\window</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\window\window_setting.h">
+      <Filter>simple_git\public\window</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\array\string_array.h">
+      <Filter>simple_git\public\array</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\library.h">
+      <Filter>simple_git\public</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\public\minimal.h">
+      <Filter>simple_git\public</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_git\Source.h">
+      <Filter>simple_git</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

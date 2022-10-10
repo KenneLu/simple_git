@@ -13,11 +13,11 @@ HANDLE hwork;
 HANDLE hrev;
 char network_data_buf[8192 * 1024] = {0};
 
-void init_operation(unsigned int type, void* value)
+void init_operation(unsigned int protocol_type, void* connect_time_init)
 {
-    if ((EGitProtocolType)type == CONNECT_TIME_OUT)
+    if ((EGitProtocolType)protocol_type == CONNECT_TIME_OUT)
     {
-        connect_time = *(float*)value;
+        connect_time = *(float*)connect_time_init;
     }
     else if (0) //可以扩展设置
     {
@@ -28,23 +28,23 @@ void init_operation(unsigned int type, void* value)
     }
 }
 
-void init_network_data_buf_protocol()
+void init_network_data_buf()
 {
     memset(network_data_buf, 0, 512);
     recv_protocol = NONE;
 }
 
-bool git_connect(const char* url, const char* addr)
+bool connect_is_alive(const char* url, const char* addr)
 {
-    if (git_send_protocol_type(url, HELLO) &&
-        git_send_content(url, addr))
+    if (send_protocol_type(url, HELLO) &&
+        send_protocol_content(url, addr))
     {
-        EGitProtocolType t = NONE;
+        EGitProtocolType type = NONE;
 
         char buf[512] = {0};
-        git_receive(&t, buf); //阻塞
+        receive_content(&type, buf); //阻塞
 
-        if (t == HEI)
+        if (type == HEI)
         {
             return true;
         }
@@ -53,9 +53,9 @@ bool git_connect(const char* url, const char* addr)
     return false;
 }
 
-bool git_send(const char* url, const char* local_path)
+bool send_file(const char* url, const char* client_file)
 {
-    if (copy_file(local_path, url) == 0)
+    if (copy_file(url, client_file) == 0)
     {
         return true;
     }
@@ -63,7 +63,7 @@ bool git_send(const char* url, const char* local_path)
     return false;
 }
 
-void git_receive(EGitProtocolType* type, char* buf)
+void receive_content(EGitProtocolType* type, char* out_content)
 {
     git_connect_start();
 
@@ -72,38 +72,38 @@ void git_receive(EGitProtocolType* type, char* buf)
     git_connect_end();
 
     // 拿到 network_data_buf
-    strcpy(buf, network_data_buf);
+    strcpy(out_content, network_data_buf);
     *type = recv_protocol;
 
     // 清空 network_data_buf
-    init_network_data_buf_protocol();
+    init_network_data_buf();
 }
 
-bool git_send_protocol_type(const char* url, EGitProtocolType type)
+bool send_protocol_type(const char* url, EGitProtocolType protocol_type)
 {
     // 当前路径下创建一个 type.protocol 文件
-    char local_buf_path[BUF_SIZE] = {0};
-    _getcwd(local_buf_path, BUF_SIZE);
-    strcat(local_buf_path, "\\");
-    strcat(local_buf_path, "type.protocol");
+    char client_type_protocol_file[BUF_SIZE] = {0};
+    _getcwd(client_type_protocol_file, BUF_SIZE);
+    strcat(client_type_protocol_file, "\\");
+    strcat(client_type_protocol_file, "type.protocol");
     
-    char buf[BUF_SIZE] = {0};
-    if (create_file(local_buf_path))
+    if (create_file(client_type_protocol_file))
     {
         // 写入 EGitProtocolType 进 type.protocol 文件
-        char* content = _itoa((int)type, buf, 10);
-        add_file(local_buf_path, content);
+        char buf[BUF_SIZE] = {0};
+        char* content = _itoa((int)protocol_type, buf, 10);
+        add_file(client_type_protocol_file, content);
 
         // 拼接远端服务器 type.protocol 文件路径
-        char url_param[BUF_SIZE] = {0};
-        strcpy(url_param, url);
-        strcat(url_param, REMOTE_T_URL);
+        char server_type_protocol_file[BUF_SIZE] = {0};
+        strcpy(server_type_protocol_file, url);
+        strcat(server_type_protocol_file, SERVER_TYPE_URL);
 
-        // 将本地 type.protocol 发送远端，并替换远端文件
-        if (git_send(url_param, local_buf_path))
+        // 将本地 type.protocol 文件发送远端
+        if (send_file(server_type_protocol_file, client_type_protocol_file))
         {
             // 删除本地 type.protocol 文件
-            remove(local_buf_path);
+            remove(client_type_protocol_file);
             return true;
         }
     }
@@ -111,29 +111,29 @@ bool git_send_protocol_type(const char* url, EGitProtocolType type)
     return false;
 }
 
-bool git_send_content(const char* url, const char* buf)
+bool send_protocol_content(const char* url, const char* content)
 {
     // 当前路径下创建一个 type.protocol 文件
-    char local_buf_path[BUF_SIZE] = {0};
-    _getcwd(local_buf_path, BUF_SIZE);
-    strcat(local_buf_path, "\\");
-    strcat(local_buf_path, "content.protocol");
+    char client_content_protocol_file[BUF_SIZE] = {0};
+    _getcwd(client_content_protocol_file, BUF_SIZE);
+    strcat(client_content_protocol_file, "\\");
+    strcat(client_content_protocol_file, "content.protocol");
 
-    if (create_file(local_buf_path))
+    if (create_file(client_content_protocol_file))
     {
         // 写入 buf
-        add_file(local_buf_path, buf);
+        add_file(client_content_protocol_file, content);
 
         // 拼接远端服务器 type.protocol 文件路径
-        char url_param[BUF_SIZE] = {0};
-        strcpy(url_param, url);
-        strcat(url_param, REMOTE_C_URL);
+        char server_content_protocol_file[BUF_SIZE] = {0};
+        strcpy(server_content_protocol_file, url);
+        strcat(server_content_protocol_file, SERVER_CONTENT_URL);
 
-        // 将本地 type.protocol 发送远端，并替换远端文件
-        if (git_send(url_param, local_buf_path))
+        // 将本地 type.protocol 发送远端
+        if (send_file(server_content_protocol_file, client_content_protocol_file))
         {
             // 删除本地 type.protocol 文件
-            remove(local_buf_path);
+            remove(client_content_protocol_file);
             return true;
         }
     }
@@ -157,57 +157,52 @@ void git_is_exit_type(const char* url_param)
     }
 }
 
-void git_is_server_exit_type(const char* url)
+void server_protocol_type_file_exit(const char* url)
 {
-    char url_param[BUF_SIZE] = {0};
-    strcpy(url_param, url);
+    char server_type_protocol_file[BUF_SIZE] = {0};
+    strcpy(server_type_protocol_file, url);
 
-    strcat(url_param, REMOTE_T_URL);
+    strcat(server_type_protocol_file, SERVER_TYPE_URL);
 
-    git_is_exit_type(url_param);
+    git_is_exit_type(server_type_protocol_file);
 }
 
-void git_is_server_exit_content(const char* url)
+void server_protocol_content_file_exit(const char* url)
 {
-    char url_param[BUF_SIZE] = {0};
-    strcpy(url_param, url);
+    char server_content_protocol_file[BUF_SIZE] = {0};
+    strcpy(server_content_protocol_file, url);
 
-    strcat(url_param, REMOTE_C_URL);
+    strcat(server_content_protocol_file, SERVER_CONTENT_URL);
 
-    git_is_exit_type(url_param);
+    git_is_exit_type(server_content_protocol_file);
 }
 
-void get_protocol_content(char* buf)
+void read_client_protocol_content(char* out_content)
 {
-    char path_buf[MAX_PATH] = {0};
-    strcpy(path_buf, get_git_client_cache());
-    strcat(path_buf, "\\content.protocol");
-    read_file(path_buf, buf);
+    char client_content_protocol_file[MAX_PATH] = {0};
+    strcpy(client_content_protocol_file, get_git_client_cache());
+    strcat(client_content_protocol_file, "\\content.protocol");
+    read_file(client_content_protocol_file, out_content);
 
-    remove(path_buf);
+    remove(client_content_protocol_file);
 }
 
-unsigned char get_protocol()
+unsigned char read_client_protocol_type()
 {
-    unsigned char ret = 0;
+    unsigned char type = 0;
+    char client_type_protocol_file[MAX_PATH] = {0};
+    strcpy(client_type_protocol_file, get_git_client_cache());
+    strcat(client_type_protocol_file, "\\type.protocol");
 
-    const char* p = get_git_client_cache();
-    char path_tmp[MAX_PATH] = {0};
-    strcpy(path_tmp, p);
-
-    strcat(path_tmp, "\\type.protocol");
-
-    if (_access(path_tmp, 0) == 0)
+    if (_access(client_type_protocol_file, 0) == 0)
     {
         char buf[MAX_PATH] = {0};
-        read_file(path_tmp, buf);
-
-        remove(path_tmp);
-
-        ret = atoi(buf);
+        read_file(client_type_protocol_file, buf);
+        remove(client_type_protocol_file);
+        type = atoi(buf);
     }
 
-    return ret;
+    return type; // 默认返回 0 NONE
 }
 
 void git_connect_start()
@@ -224,7 +219,7 @@ void git_connect_end()
 
 void save_user_ini()
 {
-    char* config_path_buf = get_user_ini_file();
+    char* config_path_buf = get_client_user_ini_file();
 
     FILE* fp = NULL;
     if ((fp = fopen(config_path_buf, "w+")) != NULL)
@@ -232,7 +227,7 @@ void save_user_ini()
         fprintf(fp, "account=%s\n", user.account);
         fprintf(fp, "password=%s\n", user.password);
         fprintf(fp, "email=%s\n", user.email);
-        fprintf(fp, "url=%s\n", remote_origin);
+        fprintf(fp, "url=%s\n", server_url);
 
         fclose(fp);
     }
@@ -241,7 +236,7 @@ void save_user_ini()
 void read_user_ini()
 {
     // 获取 ini 配置文件
-    const char* config_file_path = get_user_ini_file();
+    const char* config_file_path = get_client_user_ini_file();
 
     // 读取 ini 配置文件
     char config_buf[2048] = {0};
@@ -268,7 +263,7 @@ void read_user_ini()
             }
             else if (strstr(c_string, "url="))
             {
-                split_string_with_index(c_string, "=", remote_origin, 1);
+                split_string_with_index(c_string, "=", server_url, 1);
             }
         }
         // 释放内存

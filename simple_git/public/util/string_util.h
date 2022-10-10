@@ -6,8 +6,8 @@
 _CRT_BEGIN_C_HEADER
 int find_string(char* str, char const* sub_str); // 找到 sub_str 第一次出现的位置
 char* cut_string(const char* str, int cut_start, int cut_len); // 切割字符串
-void split_string(const char* input_string, const char* delim, FArray* output_array); // 拆分字符串，返回数组
-char* split_string_with_index(const char* input_string, const char* delim, char* output_string, int index); // 拆分字符串，返回某个元素
+void split_string(const char* str, const char* delim, FArray* out_array); // 拆分字符串，返回数组
+char* split_string_with_index(const char* str, const char* delim, char* out_str, int index); // 拆分字符串，返回某个元素
 
 void remove_char_start(char* str, char sub_char); // 移除第一个出现的 sub_char
 void remove_char_end(char* str, char sub_char); // 移除最后一个出现的 sub_char

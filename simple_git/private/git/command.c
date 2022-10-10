@@ -27,18 +27,18 @@ bool check_command(const char* buf_path)
 
 //比较不一样的 
 //服务器没有的 客户端有的 要添加到服务器
-void compare_list(const FGitVersions* server_version_list, const FFilePath* local_paths, FFilePath* out_paths)
+void compare_list(const FGitVersions* server_version_list, const FFilePath* client_paths, FFilePath* out_paths)
 {
     const char* client_url = get_project_cache();
 
     //添加 (不一样的)
-    for (int i = 0; i < local_paths->index; i++)
+    for (int i = 0; i < client_paths->index; i++)
     {
         char path_tmp[MAX_PATH] = {0}; //相对路径
-        strcpy(path_tmp, local_paths->paths[i]);
+        strcpy(path_tmp, client_paths->paths[i]);
         remove_string_start(path_tmp, client_url);
 
-        int size = get_file_size_by_filename(local_paths->paths[i]);
+        int size = get_file_size(client_paths->paths[i]);
 
         bool b_exit = false;
         for (unsigned int j = 0; j < server_version_list->size; j++)
@@ -47,7 +47,7 @@ void compare_list(const FGitVersions* server_version_list, const FFilePath* loca
             {
                 if (size != server_version_list->paths[j].file_size)
                 {
-                    strcpy(out_paths->paths[out_paths->index++], local_paths->paths[i]); //绝对路径
+                    strcpy(out_paths->paths[out_paths->index++], client_paths->paths[i]); //绝对路径
                 }
 
                 b_exit = true;
@@ -57,7 +57,7 @@ void compare_list(const FGitVersions* server_version_list, const FFilePath* loca
 
         if (!b_exit)
         {
-            strcpy(out_paths->paths[out_paths->index++], local_paths->paths[i]); //绝对路径
+            strcpy(out_paths->paths[out_paths->index++], client_paths->paths[i]); //绝对路径
         }
     }
 }
@@ -74,18 +74,18 @@ char* get_current_time()
 void version_iteration_update()
 {
     //阻塞
-    git_is_server_exit_type(remote_origin);
-    git_is_server_exit_content(remote_origin);
+    server_protocol_type_file_exit(server_url);
+    server_protocol_content_file_exit(server_url);
 
     // 1.0 检测当前版本是否是最新 获取服务器最新版本号，然后比较 看看是不是一样的
-    if (git_send_protocol_type(remote_origin, VERSION_PROTOCOL) &&
-        git_send_content(remote_origin, get_project_cache()))
+    if (send_protocol_type(server_url, VERSION_PROTOCOL) &&
+        send_protocol_content(server_url, get_project_cache()))
     {
         log_success("获取服务器 最新版本号");
 
         EGitProtocolType type = NONE;
         char buf_log[8196 * 1024] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
 
         if (buf_log[0] == '\0')
         {
@@ -137,25 +137,25 @@ void version_iteration_update()
                 strcat(str_content, buf_local);
                 strcat(str_content, "|");
 
-                git_is_server_exit_type(remote_origin);
-                git_is_server_exit_content(remote_origin);
+                server_protocol_type_file_exit(server_url);
+                server_protocol_content_file_exit(server_url);
 
                 char path_tmp[MAX_PATH] = {0};
                 strcpy(path_tmp, client_url);
                 remove_char_end(path_tmp, '\\');
 
                 FFilePath local_paths;
-                init_def_c_paths(&local_paths);
+                init_file_path(&local_paths);
 
                 FFilePath paths;
-                init_def_c_paths(&paths);
+                init_file_path(&paths);
 
                 find_files(path_tmp, &local_paths, true);
 
                 //移除 被忽略的
                 for (int i = 0; i < local_paths.index; i++)
                 {
-                    if (!is_exit_ignore(local_paths.paths[i]))
+                    if (!is_ignore(local_paths.paths[i]))
                     {
                         strcpy(paths.paths[paths.index++], local_paths.paths[i]);
                     }
@@ -163,15 +163,15 @@ void version_iteration_update()
 
                 //提取本地列表数据
                 char buf_local_versions[8196 * 10] = {0};
-                read_file(get_version_list_file(), buf_local_versions);
+                read_file(get_client_version_list_file(), buf_local_versions);
 
                 FGitVersions local_versions;
                 init_versions(&local_versions);
-                string_to_versions(buf_local_versions, &local_versions);
+                string_to_versions(&local_versions, buf_local_versions);
 
                 for (int i = 0; i < paths.index; i++)
                 {
-                    int size = get_file_size_by_filename(paths.paths[i]);
+                    int size = get_file_size(paths.paths[i]);
                     remove_string_start(paths.paths[i], client_url);
 
                     char new_guid[MAX_PATH] = {0};
@@ -205,12 +205,12 @@ void version_iteration_update()
 
                 remove_char_end(str_content, '\n');
 
-                if (git_send_protocol_type(remote_origin, VERSION_CLASH) &&
-                    git_send_content(remote_origin, str_content))
+                if (send_protocol_type(server_url, VERSION_CLASH) &&
+                    send_protocol_content(server_url, str_content))
                 {
                     type = NONE;
                     memset(buf_log, 0, sizeof(buf_log));
-                    git_receive(&type, buf_log); //阻塞工作线程
+                    receive_content(&type, buf_log); //阻塞工作线程
                     if (type == CLASH_CONTENT)
                     {
                         log_error("%s", buf_log);
@@ -225,17 +225,17 @@ void version_iteration_update()
                         strcat(str_content, get_project_cache());
 
                         // 1.1 把我们当前的客户端版本发送到服务端 
-                        git_is_server_exit_type(remote_origin);
-                        git_is_server_exit_content(remote_origin);
-                        if (git_send_protocol_type(remote_origin, VERSION_NEST) &&
-                            git_send_content(remote_origin, str_content))
+                        server_protocol_type_file_exit(server_url);
+                        server_protocol_content_file_exit(server_url);
+                        if (send_protocol_type(server_url, VERSION_NEST) &&
+                            send_protocol_content(server_url, str_content))
                         {
                             log_success("获取下一个需要更新的版本");
 
                             // 1.2 接受新版本号 存储在本地，替换
                             type = NONE;
                             memset(buf_log, 0, sizeof(buf_log));
-                            git_receive(&type, buf_log); //阻塞工作线程
+                            receive_content(&type, buf_log); //阻塞工作线程
 
                             if (buf_log[0] == '\0')
                             {
@@ -247,11 +247,11 @@ void version_iteration_update()
                             //init_commit(&client_latest_version);
                             //string_to_git_commit(&client_latest_version, buf_log);
 
-                            rewrite_file(get_version_info_file(), buf_log);
+                            rewrite_file(get_client_version_info_file(), buf_log);
 
                             type = NONE;
                             memset(buf_log, 0, sizeof(buf_log));
-                            git_receive(&type, buf_log); //阻塞工作线程
+                            receive_content(&type, buf_log); //阻塞工作线程
 
                             if (buf_log[0] == '\0')
                             {
@@ -262,11 +262,11 @@ void version_iteration_update()
 
                             if (type == VERSION_NEST_COMPLETE)
                             {
-                                rewrite_file(get_version_list_file(), buf_log);
+                                rewrite_file(get_client_version_list_file(), buf_log);
 
                                 FGitVersions v_content;
                                 init_versions(&v_content);
-                                string_to_versions(buf_log, &v_content);
+                                string_to_versions(&v_content, buf_log);
 
                                 for (unsigned int i = 0; i < v_content.size; i++)
                                 {
@@ -329,12 +329,12 @@ void git_init_func()
 
         // 需要忽略的文件
         char ignore_content_path[MAX_PATH] = {0};
-        strcpy(ignore_content_path, get_git_cache());
+        strcpy(ignore_content_path, get_client_git_cache());
         strcat(ignore_content_path, "ignore_path.ig");
 
         // 需要忽略的文件后缀
         char ignore_content_suffix[MAX_PATH] = {0};
-        strcpy(ignore_content_suffix, get_git_cache());
+        strcpy(ignore_content_suffix, get_client_git_cache());
         strcat(ignore_content_suffix, "ignore_suffix.ig");
 
         // 生成忽略文件夹内容
@@ -389,7 +389,7 @@ void git_init_func()
 
 bool git_status_func()
 {
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         bool ret = log_error("未指定 服务器地址");
         if (!ret)
@@ -400,8 +400,8 @@ bool git_status_func()
     }
 
     //阻塞
-    git_is_server_exit_type(remote_origin);
-    git_is_server_exit_content(remote_origin);
+    server_protocol_type_file_exit(server_url);
+    server_protocol_content_file_exit(server_url);
 
     FGitCommit git_commit;
     get_git_commit(&git_commit);
@@ -417,14 +417,14 @@ bool git_status_func()
     strcat(buf_content, "\n");
     strcat(buf_content, buf_guid);
 
-    if (git_send_protocol_type(remote_origin, VERSION_STATUS) &&
-        git_send_content(remote_origin, buf_content))
+    if (send_protocol_type(server_url, VERSION_STATUS) &&
+        send_protocol_content(server_url, buf_content))
     {
         log_success("地址 和 版本guid 发送成功");
 
         EGitProtocolType type = NONE;
         char buf_log[8196 * 1024] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
         if (type == VERSION_STATUS)
         {
             if (buf_log[0] != '\0')
@@ -432,7 +432,7 @@ bool git_status_func()
                 FGitVersions git_versions;
                 init_versions(&git_versions);
 
-                string_to_versions(buf_log, &git_versions);
+                string_to_versions(&git_versions, buf_log);
 
                 for (unsigned int i = 0; i < git_versions.size; i++)
                 {
@@ -481,7 +481,7 @@ bool git_status_func()
 
 bool git_log_func()
 {
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         bool ret = log_error("未指定 服务器地址");
         if (!ret)
@@ -492,18 +492,18 @@ bool git_log_func()
     }
 
     //阻塞
-    git_is_server_exit_type(remote_origin);
-    git_is_server_exit_content(remote_origin);
+    server_protocol_type_file_exit(server_url);
+    server_protocol_content_file_exit(server_url);
 
     const char* client_addr = get_project_cache();
-    if (git_send_protocol_type(remote_origin, VERSION_LOG) &&
-        git_send_content(remote_origin, client_addr))
+    if (send_protocol_type(server_url, VERSION_LOG) &&
+        send_protocol_content(server_url, client_addr))
     {
         log_success("客户端地址 发送成功");
 
         EGitProtocolType type = NONE;
         char buf_log[8196] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
         if (type == VERSION_LOG)
         {
             if (buf_log[0] != '\0')
@@ -605,7 +605,7 @@ void git_set_name_func(char* user_input)
 
 void git_clone_func()
 {
-    bool ret = log_success("设置 git remote add origin 成功 %s", remote_origin);
+    bool ret = log_success("设置 git remote add origin 成功 %s", server_url);
     if (!ret)
     {
         printf("\n请先进行 git init 初始化一个仓库 否则 log 日志系统无法使用\n");
@@ -615,14 +615,14 @@ void git_clone_func()
     save_user_ini(); // 这里为啥要 save？似乎不用吧？【*】
 
     //获取最新版本号
-    if (git_send_protocol_type(remote_origin, VERSION_PROTOCOL) &&
-        git_send_content(remote_origin, get_project_cache()))
+    if (send_protocol_type(server_url, VERSION_PROTOCOL) &&
+        send_protocol_content(server_url, get_project_cache()))
     {
         log_success("获取服务器 最新版本号");
 
         EGitProtocolType type = NONE;
         char buf_log[8196 * 1024] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
 
         if (buf_log[0] == '\0')
         {
@@ -638,34 +638,34 @@ void git_clone_func()
             FGitCommit Server_latest_version;
             init_commit(&Server_latest_version);
             string_to_git_commit(&Server_latest_version, buf_log);
-            rewrite_file(get_version_info_file(), buf_log);
+            rewrite_file(get_client_version_info_file(), buf_log);
 
             // 将 EGitProtocolType 和 git.txt 信息存入远端
-            if (git_send_protocol_type(remote_origin, GIT_CLONE) &&
-                git_send_content(remote_origin, get_project_cache()))
+            if (send_protocol_type(server_url, GIT_CLONE) &&
+                send_protocol_content(server_url, get_project_cache()))
             {
                 log_success("获取服务器 最新版本号");
 
                 EGitProtocolType type = NONE;
                 char buf_log[8196 * 1024] = {0};
-                git_receive(&type, buf_log); //阻塞工作线程
+                receive_content(&type, buf_log); //阻塞工作线程
 
                 if (type == GIT_CLONE)
                 {
                     // 将 EGitProtocolType 和 git.txt 信息存入远端
-                    if (git_send_protocol_type(remote_origin, VERSION_LIST) &&
-                        git_send_content(remote_origin, get_project_cache()))
+                    if (send_protocol_type(server_url, VERSION_LIST) &&
+                        send_protocol_content(server_url, get_project_cache()))
                     {
                         log_success("获取服务器 最新版本号");
 
                         EGitProtocolType type = NONE;
                         char buf_log[8196 * 1024] = {0};
-                        git_receive(&type, buf_log); //阻塞工作线程
+                        receive_content(&type, buf_log); //阻塞工作线程
 
                         if (type == VERSION_LIST)
                         {
                             // 将本地 version.list 文件内容，替换成远端服务器版本
-                            rewrite_file(get_version_list_file(), buf_log);
+                            rewrite_file(get_client_version_list_file(), buf_log);
                             log_log("%s", buf_log);
                         }
                     }
@@ -677,13 +677,13 @@ void git_clone_func()
 
 bool git_remote_add_origin_func(char* new_remote_url)
 {
-    split_string_with_index(new_remote_url, " ", remote_origin, 4);
-    bool ret = log_success("设置git remote add origin 成功 %s", remote_origin);
+    split_string_with_index(new_remote_url, " ", server_url, 4);
+    bool ret = log_success("设置git remote add origin 成功 %s", server_url);
     if (!ret)
     {
         printf("\n请先进行 git init 初始化一个仓库 否则log日志系统无法使用\n");
 
-        memset(remote_origin, 0, sizeof(remote_origin));
+        memset(server_url, 0, sizeof(server_url));
         return false;
     }
 
@@ -699,7 +699,7 @@ bool git_pull_func()
         return false;
     }
 
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         log_error("出错,请通过 git remote add origin 指定有效的服务器地址...");
     }
@@ -709,27 +709,27 @@ bool git_pull_func()
     return true;
 }
 
-void git_pull_local_data(const FGitVersions* server_version_list, const char* value, const char* heard_value)
+void git_pull_client_data(const FGitVersions* server_version_list, const char* value, const char* heard_value)
 {
     //初始化表
     init_path(&server_list);
 
     //pull
     FFilePath paths;
-    init_def_c_paths(&paths);
+    init_file_path(&paths);
     find_files(value, &paths, true);
 
     //比较本地有没有添加的文件
     //////////////////////////////////////////////////////////////////////////
     FFilePath out_paths;
-    init_def_c_paths(&out_paths);
+    init_file_path(&out_paths);
     compare_list(server_version_list, &paths, &out_paths);
 
     //比较本地有没有删除的文件
     //////////////////////////////////////////////////////////////////////////
     //发送版本移除检测路径
-    git_is_server_exit_type(remote_origin);
-    git_is_server_exit_content(remote_origin);
+    server_protocol_type_file_exit(server_url);
+    server_protocol_content_file_exit(server_url);
 
     //向服务器获取本地指定列表
     const char* project_path = get_project_cache();
@@ -755,12 +755,12 @@ void git_pull_local_data(const FGitVersions* server_version_list, const char* va
     strcat(buf_content, "\n");
     strcat(buf_content, get_project_cache());
 
-    if (git_send_protocol_type(remote_origin, CHECK_REMOVE_FILENAME) &&
-        git_send_content(remote_origin, buf_content))
+    if (send_protocol_type(server_url, CHECK_REMOVE_FILENAME) &&
+        send_protocol_content(server_url, buf_content))
     {
         EGitProtocolType type = NONE;
         char buf_log[8196 * 10] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
         if (type == CHECK_REMOVE_FILENAME)
         {
             if (buf_log[0] != '\0')
@@ -780,16 +780,16 @@ void git_pull_local_data(const FGitVersions* server_version_list, const char* va
                 }
 
                 FFilePath local_list_paths;
-                init_def_c_paths(&local_list_paths);
+                init_file_path(&local_list_paths);
 
                 FFilePath local_list_paths_org;
-                init_def_c_paths(&local_list_paths_org);
+                init_file_path(&local_list_paths_org);
                 find_files(buf_content, &local_list_paths_org, true);
 
                 //去掉忽略的路径
                 for (int i = 0; i < local_list_paths_org.index; i++)
                 {
-                    if (!is_exit_ignore(local_list_paths_org.paths[i]))
+                    if (!is_ignore(local_list_paths_org.paths[i]))
                     {
                         strcpy(local_list_paths.paths[local_list_paths.index++], local_list_paths_org.paths[i]);
                     }
@@ -826,7 +826,7 @@ void git_pull_local_data(const FGitVersions* server_version_list, const char* va
 
     for (int i = 0; i < out_paths.index; i++)
     {
-        if (!is_exit_ignore(out_paths.paths[i]))
+        if (!is_ignore(out_paths.paths[i]))
         {
             char buf_tmp[MAX_PATH];
             strcpy(buf_tmp, out_paths.paths[i]);
@@ -834,7 +834,7 @@ void git_pull_local_data(const FGitVersions* server_version_list, const char* va
             //Debug\2.exe
 
             char buf_remote_path_tmp[MAX_PATH] = {0};
-            strcpy(buf_remote_path_tmp, remote_origin);
+            strcpy(buf_remote_path_tmp, server_url);
 
             char new_buf_content[MAX_PATH] = {0};
             _getcwd(new_buf_content, MAX_PATH);
@@ -857,7 +857,7 @@ void git_pull_local_data(const FGitVersions* server_version_list, const char* va
             {
                 char buf_remote_path_tmp1[MAX_PATH] = {0};
                 strcpy(buf_remote_path_tmp1, buf_remote_path_tmp);
-                get_get_file_folder_inline(buf_remote_path_tmp1);
+                get_git_file_folder_inline(buf_remote_path_tmp1);
 
                 if (!create_folder_path(buf_remote_path_tmp1))
                 {
@@ -890,20 +890,20 @@ bool git_add_func(char* user_input)
         return false;
     }
 
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         log_error("出错,请通过 git remote add origin 指定有效的服务器地址...");
     }
 
     //验证版本是否为最新的
-    git_is_server_exit_type(remote_origin);
-    git_is_server_exit_content(remote_origin);
-    if (git_send_protocol_type(remote_origin, VERSION_PROTOCOL) &&
-        git_send_content(remote_origin, get_project_cache()))
+    server_protocol_type_file_exit(server_url);
+    server_protocol_content_file_exit(server_url);
+    if (send_protocol_type(server_url, VERSION_PROTOCOL) &&
+        send_protocol_content(server_url, get_project_cache()))
     {
         EGitProtocolType type = NONE;
         char buf_log[8196 * 1024] = {0};
-        git_receive(&type, buf_log); //阻塞工作线程
+        receive_content(&type, buf_log); //阻塞工作线程
 
         if (buf_log[0] == '\0')
         {
@@ -928,8 +928,8 @@ bool git_add_func(char* user_input)
             //比较版本是否一样
             if (guid_equal(&client_latest_version.guid, &Server_latest_version.guid))
             {
-                git_is_server_exit_type(remote_origin);
-                git_is_server_exit_content(remote_origin);
+                server_protocol_type_file_exit(server_url);
+                server_protocol_content_file_exit(server_url);
 
                 char buf_path[1024] = {0};
                 if (strstr(user_input, "git add ."))
@@ -966,12 +966,12 @@ bool git_add_func(char* user_input)
                 strcat(buf_path, "\n");
                 strcat(buf_path, get_project_cache());
 
-                if (git_send_protocol_type(remote_origin, FIND_VERSION_LIST) &&
-                    git_send_content(remote_origin, buf_path))
+                if (send_protocol_type(server_url, FIND_VERSION_LIST) &&
+                    send_protocol_content(server_url, buf_path))
                 {
                     EGitProtocolType type = NONE;
                     char buf_log[8196 * 1024] = {0};
-                    git_receive(&type, buf_log); //阻塞工作线程
+                    receive_content(&type, buf_log); //阻塞工作线程
 
                     if (type == FIND_VERSION_LIST)
                     {
@@ -980,10 +980,10 @@ bool git_add_func(char* user_input)
                         //如果存在就把版本进行翻译
                         if (buf_log[0] != '\0')
                         {
-                            string_to_versions(buf_log, &server_version_list);
+                            string_to_versions(&server_version_list, buf_log);
                         }
 
-                        if (remote_origin[0] != '\0')
+                        if (server_url[0] != '\0')
                         {
                             FArray c_array;
                             split_string(user_input, " ", &c_array);
@@ -1002,7 +1002,7 @@ bool git_add_func(char* user_input)
                                 char value[MAX_PATH];
                                 _getcwd(value, MAX_PATH);
 
-                                git_pull_local_data(&server_version_list, value, NULL);
+                                git_pull_client_data(&server_version_list, value, NULL);
                             }
                             else
                             {
@@ -1012,7 +1012,7 @@ bool git_add_func(char* user_input)
                                 strcat(value, "\\");
                                 strcat(value, heard_value);
 
-                                git_pull_local_data(&server_version_list, value, heard_value);
+                                git_pull_client_data(&server_version_list, value, heard_value);
                             }
 
                             destroy_array(&c_array);
@@ -1046,7 +1046,7 @@ bool git_commit_func(char* user_input)
         return false;
     }
 
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         log_error("出错,请通过 git remote add origin 指定有效的服务器地址...");
     }
@@ -1086,7 +1086,7 @@ bool git_push_func()
         return false;
     }
 
-    if (remote_origin[0] == '\0')
+    if (server_url[0] == '\0')
     {
         log_error("出错,请通过 git remote add origin 指定有效的服务器地址...");
     }
@@ -1096,7 +1096,7 @@ bool git_push_func()
         if (commit.name != "")
         {
             const char* client_addr = get_project_cache();
-            if (git_connect(remote_origin, client_addr))
+            if (connect_is_alive(server_url, client_addr))
             {
                 log_success("链接服务器成功", client_addr);
 
@@ -1115,12 +1115,12 @@ bool git_push_func()
 
                     //检测服务器上的文件是否存在
                     //这里可以优化 比如在前面git add获取表 然后对照是否存在 存在就标记存在等 节省网络带宽
-                    if (git_send_protocol_type(remote_origin, FILE_EXIT) &&
-                        git_send_content(remote_origin, tmp_buf))
+                    if (send_protocol_type(server_url, FILE_EXIT) &&
+                        send_protocol_content(server_url, tmp_buf))
                     {
                         EGitProtocolType type = NONE;
                         char buf_log[10] = {0};
-                        git_receive(&type, buf_log); //阻塞工作线程
+                        receive_content(&type, buf_log); //阻塞工作线程
 
                         if (type == FILE_EXIT)
                         {
@@ -1135,7 +1135,7 @@ bool git_push_func()
                         }
                     }
 
-                    if (git_send(git_path_2ds.paths[i].path_dis, git_path_2ds.paths[i].path_src))
+                    if (send_file(git_path_2ds.paths[i].path_dis, git_path_2ds.paths[i].path_src))
                     {
                         add_git_versions(git_path_2ds.paths[i].path_src, operation_type, &versions);
                         log_log("将路径下的 %s 拉去 到 %s 成功", git_path_2ds.paths[i].path_src,
@@ -1151,16 +1151,16 @@ bool git_push_func()
                 //更新服务器版本
                 //版本发送
                 char buf_content[8196 * 1024] = {0};
-                git_commit_to_string(&commit, buf_content);
-                if (git_send_protocol_type(remote_origin, COMMIT)
-                    && git_send_content(remote_origin, buf_content))
+                git_commit_to_string(buf_content, &commit);
+                if (send_protocol_type(server_url, COMMIT)
+                    && send_protocol_content(server_url, buf_content))
                 {
                     //阻塞
-                    git_is_server_exit_type(remote_origin);
-                    git_is_server_exit_content(remote_origin);
+                    server_protocol_type_file_exit(server_url);
+                    server_protocol_content_file_exit(server_url);
 
                     //存储到本地
-                    rewrite_file(get_version_info_file(), buf_content);
+                    rewrite_file(get_client_version_info_file(), buf_content);
 
                     log_success("版本信息发送成功");
                 }
@@ -1171,12 +1171,12 @@ bool git_push_func()
                     memset(buf_content, 0, sizeof(buf_content));
                     path_to_string(buf_content, &server_list);
 
-                    if (git_send_protocol_type(remote_origin, REMOVE_CONTENT) &&
-                        git_send_content(remote_origin, buf_content))
+                    if (send_protocol_type(server_url, REMOVE_CONTENT) &&
+                        send_protocol_content(server_url, buf_content))
                     {
                         //阻塞
-                        git_is_server_exit_type(remote_origin);
-                        git_is_server_exit_content(remote_origin);
+                        server_protocol_type_file_exit(server_url);
+                        server_protocol_content_file_exit(server_url);
 
                         for (int i = 0; i < server_list.size; i++)
                         {
@@ -1189,15 +1189,15 @@ bool git_push_func()
                 //列表发送
                 memset(buf_content, 0, sizeof(buf_content));
                 versions_to_string(buf_content, &versions);
-                if (git_send_protocol_type(remote_origin, COMMIT_VERSION_LIST) &&
-                    git_send_content(remote_origin, buf_content))
+                if (send_protocol_type(server_url, COMMIT_VERSION_LIST) &&
+                    send_protocol_content(server_url, buf_content))
                 {
                     //阻塞
-                    git_is_server_exit_type(remote_origin);
-                    git_is_server_exit_content(remote_origin);
+                    server_protocol_type_file_exit(server_url);
+                    server_protocol_content_file_exit(server_url);
 
                     //存储本地
-                    rewrite_file(get_version_list_file(), buf_content);
+                    rewrite_file(get_client_version_list_file(), buf_content);
 
                     log_success("版本数据发送成功 版本列表为下面内容");
 
@@ -1223,8 +1223,8 @@ bool git_push_func()
 
                 memset(buf_content, 0, sizeof(buf_content));
                 guid_to_string(buf_content, &commit.guid);
-                if (git_send_protocol_type(remote_origin, SAVE_VERSION_REQUEST) &&
-                    git_send_content(remote_origin, buf_content))
+                if (send_protocol_type(server_url, SAVE_VERSION_REQUEST) &&
+                    send_protocol_content(server_url, buf_content))
                 {
                     log_success("当前的版本号[%s] 通知服务器进行存储~", buf_content);
                 }

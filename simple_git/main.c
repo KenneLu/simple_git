@@ -19,7 +19,7 @@ DWORD WINAPI client_receive(LPVOID lpParam)
 {
     bool b_quit = false;
     while (!b_quit) {
-        unsigned char protocol = get_protocol();
+        unsigned char protocol = read_client_protocol_type();
 
         if (check_connect) {
             if ((connect_time -= 0.5f) <= 0) {
@@ -37,16 +37,16 @@ DWORD WINAPI client_receive(LPVOID lpParam)
                 ResumeThread(hwork);
                 break;
             }
-        case REMOVE_LOCAL_REQUEST: //服务器通知客户端移除文件
+        case REMOVE_CLIENT_REQUEST: //服务器通知客户端移除文件
             {
-                init_network_data_buf_protocol();
-                get_protocol_content(network_data_buf);
+                init_network_data_buf();
+                read_client_protocol_content(network_data_buf);
 
                 char path_tmp[MAX_PATH] = {0};
                 strcpy(path_tmp, get_project_cache());
                 strcat(path_tmp, network_data_buf);
 
-                if (!is_exit_ignore(path_tmp)) {
+                if (!is_ignore(path_tmp)) {
                     if (remove(path_tmp) == 0) {
                         log_success("从客户端 成功移除 %s", path_tmp);
                     }
@@ -76,8 +76,8 @@ DWORD WINAPI client_receive(LPVOID lpParam)
             {
                 Sleep(100);
 
-                init_network_data_buf_protocol();
-                get_protocol_content(network_data_buf);
+                init_network_data_buf();
+                read_client_protocol_content(network_data_buf);
 
                 recv_protocol = (EGitProtocolType)protocol;
                 ResumeThread(hwork);
@@ -113,7 +113,7 @@ void init_engine(int argc, char* argv[])
     const char* exe_path = argv[0];
     get_path_filename(project_name, exe_path);
 
-    init_network_data_buf_protocol();
+    init_network_data_buf();
 
     // 读取用户配置表
     read_user_ini();
@@ -138,11 +138,11 @@ void init_engine(int argc, char* argv[])
     }
 
     char ignore_content_path[MAX_PATH] = {0};
-    strcpy(ignore_content_path, get_git_cache());
+    strcpy(ignore_content_path, get_client_git_cache());
     strcat(ignore_content_path, "ignore_path.ig");
 
     char ignore_content_suffix[MAX_PATH] = {0};
-    strcpy(ignore_content_suffix, get_git_cache());
+    strcpy(ignore_content_suffix, get_client_git_cache());
     strcat(ignore_content_suffix, "ignore_suffix.ig");
 
     //读取忽略的路径
@@ -172,8 +172,6 @@ void init_engine(int argc, char* argv[])
 
 void engine_loop()
 {
-    //git_send_protocol_type(git_remote_origin,GIT_PULL);
-
     char user_input[1024] = {0};
 
     //循环
@@ -240,7 +238,7 @@ void engine_loop()
         }
         else if (strstr(user_input, "git clone")) {
             // 获取指令
-            split_string_with_index(user_input, " ", remote_origin, 2);
+            split_string_with_index(user_input, " ", server_url, 2);
             // 执行 clone 指令
             git_clone_func();
         }
@@ -330,7 +328,7 @@ void exit_engine()
 //guid_to_string(buf, &guid);
 //printf("字符串 %s \r\n", buf);
 //normalization_guid(&guid);
-//string_to_guid(buf, &guid);
+//string_to_guid(&guid, buf);
 //printf("还原的 a=%d,b=%d,c=%d,d=%d \r\n", guid.a, guid.b, guid.c, guid.d);
 //return;
 

@@ -17,7 +17,7 @@ int find_string(char* str, char const* sub_str)
             }
             if (sub_index == strlen(sub_str))
             {
-                return index;
+                return i;
             }
         }
     }
@@ -52,16 +52,16 @@ void split_string(const char* c_string, const char* delim, FArray* c_array)
     }
 }
 
-char* split_string_with_index(const char* input_string, const char* delim, char* output_string, int index)
+char* split_string_with_index(const char* str, const char* delim, char* out_str, int index)
 {
     FArray c_array;
-    split_string(input_string, delim, &c_array); // 拆分字符串
+    split_string(str, delim, &c_array); // 拆分字符串
     char* p = get_array_element(&c_array, index); // 获取指定的部分
     remove_char_end(p, '\n'); // 剔除换行符
-    strcpy(output_string, p); // 深拷贝
+    strcpy(out_str, p); // 深拷贝
     destroy_array(&c_array); // 释放内存
 
-    return output_string;
+    return out_str;
 }
 
 void remove_char_start(char* str, char sub_char)

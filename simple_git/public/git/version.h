@@ -68,11 +68,11 @@ typedef struct
 } FGitPath2Ds;
 FGitPath2Ds git_path_2ds;
 
-void string_to_git_commit(FGitCommit* git_commit, const char* buf); // 字符串处理
-void string_to_git_commits(FGitCommits* git_commit, const char* buf); // 字符串处理
-void string_to_versions(const char* buf, FGitVersions* in_versions); // 字符串处理
-char* git_commit_to_string(const FGitCommit* git_commit, char* buf); // 字符串处理
-void versions_to_string(char* buf, const FGitVersions* in_versions); // 字符串处理
+void string_to_git_commit(FGitCommit* out_git_commit, const char* str); // 字符串处理
+void string_to_git_commits(FGitCommits* out_git_commits, const char* str); // 字符串处理
+void string_to_versions(FGitVersions* out_in_versions, const char* str); // 字符串处理
+char* git_commit_to_string(char* out_str, const FGitCommit* git_commit); // 字符串处理
+void versions_to_string(char* out_str, const FGitVersions* in_versions); // 字符串处理
 
 // 初始化
 void init_commit(FGitCommit* git_commit); // 初始化 git_commit 为 0
@@ -81,5 +81,5 @@ void init_versions(FGitVersions* versions); // 初始化 versions 为 0
 void init_git_path_2ds(FGitPath2Ds* path_2ds); // 初始化 path_2ds 为 0
 
 // core
-char* get_git_commit(FGitCommit* git_commit);
+char* get_git_commit(FGitCommit* out_git_commit); // 获取客户端 commit 内容
 void add_git_versions(const char* int_path, EVersionOperationType type, FGitVersions* out_versions);

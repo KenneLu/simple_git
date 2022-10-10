@@ -40,12 +40,12 @@ void string_to_ignore_suffix(const char* buf)
     }
 }
 
-bool is_exit_ignore(const char* path)
+bool is_ignore(const char* file_path)
 {
     //文件夹判定
     for (int i = 0; i < ignore_path.size; i++)
     {
-        if (strstr(path, ignore_path.data[i]))
+        if (strstr(file_path, ignore_path.data[i]))
         {
             return true;
         }
@@ -54,7 +54,7 @@ bool is_exit_ignore(const char* path)
     //后缀类型判定
     for (int i = 0; i < ignore_suffix.size; i++)
     {
-        if (strstr(path, ignore_suffix.data[i]))
+        if (strstr(file_path, ignore_suffix.data[i]))
         {
             return true;
         }

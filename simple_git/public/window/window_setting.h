@@ -23,6 +23,5 @@ typedef enum
 	BRIGHT_WHITE,		// 亮白色
 } EConsoleColor;
 
-// set_console_color
-void set_console_color(EConsoleColor font_color, EConsoleColor background_color);
+void set_console_color(EConsoleColor font_color, EConsoleColor background_color); // 设置控制台输出颜色
 _CRT_END_C_HEADER

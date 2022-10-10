@@ -25,14 +25,14 @@ typedef enum
     FILE_EXIT,						//文件是否存在
     FIND_VERSION_LIST,				//根据版本路径寻找数据对应版本内容
     CONNECT_TIME_OUT,				//连接超时
-    REMOVE_LOCAL_REQUEST,			//发送客户端移除 协议
+    REMOVE_CLIENT_REQUEST,			//发送客户端移除 协议
     SAVE_VERSION_REQUEST,			//通知服务器 存储当前版本
     GIT_RESET_VERSION,				//还原版本
 } EGitProtocolType;
 
 //对应远端的名字
-#define REMOTE_T_URL "\\git_server\\type.protocol"
-#define REMOTE_C_URL "\\git_server\\content.protocol"
+#define SERVER_TYPE_URL "\\git_server\\type.protocol"
+#define SERVER_CONTENT_URL "\\git_server\\content.protocol"
 
 //对线程进行控制 
 extern HANDLE hwork;
@@ -52,24 +52,24 @@ typedef struct
 FGitUser user; // 需要一个全局的实例
 
 _CRT_BEGIN_C_HEADER
-void init_operation(unsigned int type,void * value);
-void init_network_data_buf_protocol();
+void init_operation(unsigned int protocol_type,void * connect_time_init); // 根据 protocol_type 类型初始化对应的全局变量
+void init_network_data_buf(); // 清空网络传输的缓存数据
 
-bool git_connect(const char *url,const char *addr);
-bool git_send(const char *url, const char *local_path);
-void git_receive(EGitProtocolType *type,char *buf);//工作线程 去取我们的数据
+bool connect_is_alive(const char *url,const char *addr); // 检测服务器是否存在，通信是否正常
+bool send_file(const char *url, const char *client_file); // 将本地文件发送远端
+void receive_content(EGitProtocolType *type,char *out_content);//工作线程 去取我们的数据
 
-bool git_send_protocol_type(const char *url, EGitProtocolType type); // 将本地 EGitProtocolType 存到远端 type.protocol
-bool git_send_content(const char *url,const char *buf); // 将 buf 存到远端 content.protocol
+bool send_protocol_type(const char *url, EGitProtocolType protocol_type); // 将 protocol_type 发送远端 
+bool send_protocol_content(const char *url,const char *content); // 将 content 发送远端
 
-void git_is_server_exit_type(const char *url);
-void git_is_server_exit_content(const char *url);
+void server_protocol_type_file_exit(const char *url); // 检测服务器端是否存在 type.protocol
+void server_protocol_content_file_exit(const char *url); // 检测服务器端是否存在 content.protocol
 
-void get_protocol_content(char *buf);
-unsigned char get_protocol();
+void read_client_protocol_content(char *out_content); // 读取本地的  content.protocol 内容
+unsigned char read_client_protocol_type(); // 读取本地的  type.protocol 内容
 
-void git_connect_start();
-void git_connect_end();
+void git_connect_start(); // 标记链接开始
+void git_connect_end(); // 标记链接结束
 
 void save_user_ini(); // 存储用户信息到配置文件
 void read_user_ini(); // 获取配置文件中的用户信息

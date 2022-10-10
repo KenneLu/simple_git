@@ -66,9 +66,9 @@ const char* get_log_folder()
     return log_folder;
 }
 
-void set_log_folder(const char* path)
+void set_log_folder(const char* log_folder_path)
 {
-    strcpy(log_folder, path);
+    strcpy(log_folder, log_folder_path);
 }
 
 bool logger(EMessageType type, char* format, ...)

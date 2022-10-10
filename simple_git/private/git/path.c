@@ -18,11 +18,11 @@ char* get_git_client_cache()
     return git_client_cache;
 }
 
-const char* get_version_info_file()
+const char* get_client_version_info_file()
 {
     if (version_info_file[0] == '\0')
     {
-        const char* p = get_git_cache();
+        const char* p = get_client_git_cache();
         strcpy(version_info_file, p);
         strcat(version_info_file, "version.info");
     }
@@ -32,7 +32,7 @@ const char* get_version_info_file()
 
 char* get_project_cache()
 {
-    if (git_txt_file[0] == '\0')
+    if (project_path[0] == '\0')
     {
         // 获取当前文件绝对路径
         char buf_project_path[MAX_PATH];
@@ -42,50 +42,43 @@ char* get_project_cache()
         FArray path_split;
         split_string(buf_project_path, "\\", &path_split);
 
-        // 似乎是迭代寻找 git.txt 文件 ?【*】
-        char buf_path[MAX_PATH] = {0};
+        // 似乎是迭代寻找 git.txt 文件
+        char path_walker[MAX_PATH] = {0};
         for (int i = 0; i < path_split.size; i++)
         {
             char* p = get_array_element(&path_split, i);
-            strcat(buf_path, p);
-            strcat(buf_path, "\\");
+            strcat(path_walker, p);
+            strcat(path_walker, "\\");
 
             // 判断当前文件夹中是否存在 .git/git.txt 文件
-            char buf_tmp[MAX_PATH] = {0};
-            strcpy(buf_tmp, buf_path);
-            strcat(buf_tmp, ".git\\git.txt");
-            if (_access(buf_tmp, 0) == 0)
+            char git_txt_path[MAX_PATH] = {0};
+            strcpy(git_txt_path, path_walker);
+            strcat(git_txt_path, ".git\\git.txt");
+            if (_access(git_txt_path, 0) == 0)
             {
-                strcpy(git_txt_file, buf_path);
-                break; // 存在则挑出迭代
+                // 存在则表示找到项目路径了
+                strcpy(project_path, path_walker);
+                break;
             }
         }
-
         destroy_array(&path_split);
-
-        //if (git_project_path[0] == '\0')
-        //{
-        //	strcpy(git_project_path, buf_project_path);
-        //	strcat(git_project_path, "\\");
-        //	//printf("请先进行 git init 命令 初始化一个本地仓库");
-        //}
     }
 
-    return git_txt_file;
+    return project_path;
 }
 
 char* get_git_server_cache()
 {
     if (git_server_cache[0] == '\0')
     {
-        strcpy(git_server_cache, remote_origin);
+        strcpy(git_server_cache, server_url);
         strcat(git_server_cache, "\\git_server");
     }
 
     return git_server_cache;
 }
 
-const char* get_git_cache()
+const char* get_client_git_cache()
 {
     if (git_cache[0] == '\0')
     {
@@ -100,11 +93,11 @@ const char* get_git_cache()
     return git_cache;
 }
 
-const char* get_version_list_file()
+const char* get_client_version_list_file()
 {
     if (version_list_file[0] == '\0')
     {
-        const char* p = get_git_cache();
+        const char* p = get_client_git_cache();
         strcpy(version_list_file, p);
         strcat(version_list_file, "version.list");
     }
@@ -112,13 +105,13 @@ const char* get_version_list_file()
     return version_list_file;
 }
 
-char* get_user_ini_file()
+char* get_client_user_ini_file()
 {
     if (user_ini_file[0] == '\0')
     {
-        if (get_git_cache()[0] != '\0')
+        if (get_client_git_cache()[0] != '\0')
         {
-            strcpy(user_ini_file, get_git_cache());
+            strcpy(user_ini_file, get_client_git_cache());
             strcat(user_ini_file, "user.ini"); // 配置文件
             if (_access(user_ini_file, 0) == -1)
             {

@@ -36,85 +36,77 @@ unsigned int hex_number(const char* hex_str)
     return result;
 }
 
-bool is_guid_valid_str(const char* c_guid)
+bool is_guid_valid_str(const char* guid)
 {
     FGitGuid n_guid;
 
     init_guid(&n_guid);
-    string_to_guid(c_guid, &n_guid);
+    string_to_guid(&n_guid, guid);
 
     return is_guid_valid(&n_guid);
 }
 
-bool is_guid_valid(FGitGuid* c_guid)
+bool is_guid_valid(FGitGuid* guid)
 {
     FGitGuid z_guid;
     init_guid(&z_guid);
 
-    return !guid_equal(c_guid, &z_guid);
+    return !guid_equal(guid, &z_guid);
 }
 
-void init_guid(FGitGuid* c_guid)
+void init_guid(FGitGuid* guid)
 {
-    c_guid->a = 0;
-    c_guid->b = 0;
-    c_guid->c = 0;
-    c_guid->d = 0;
+    guid->a = 0;
+    guid->b = 0;
+    guid->c = 0;
+    guid->d = 0;
 }
 
-void create_guid_str(char* c_guid)
+void create_guid_str(char* guid_string)
 {
     FGitGuid n_guid;
     init_guid(&n_guid);
 
     create_guid(&n_guid);
 
-    guid_to_string(c_guid, &n_guid);
+    guid_to_string(guid_string, &n_guid);
 }
 
-void create_guid(FGitGuid* c_guid)
+void create_guid(FGitGuid* guid)
 {
-    init_guid(c_guid); // 初始化
-    assert(CoCreateGuid((GUID*)c_guid) == S_OK); // 新建 GUID
+    init_guid(guid); // 初始化
+    assert(CoCreateGuid((GUID*)guid) == S_OK); // 新建 GUID
 }
 
-void guid_to_string(char* str, const FGitGuid* c_guid)
+void guid_to_string(char* str, const FGitGuid* guid)
 {
     // 注：%08X 表示 "输出 16 进制的占 8 位数"
-    placeholder_cat_s(str, "%08X%08X%08X%08X", c_guid->a, c_guid->b, c_guid->c, c_guid->d);
+    placeholder_cat_s(str, "%08X%08X%08X%08X", guid->a, guid->b, guid->c, guid->d);
 }
 
-void string_to_guid(const char* str, FGitGuid* c_guid)
+void string_to_guid(FGitGuid* guid, const char* str)
 {
     if (strlen(str) + 1 >= 32)
     {
-        c_guid->a = hex_number(cut_string(str, 0, 8));
-        c_guid->b = hex_number(cut_string(str, 8, 8));
-        c_guid->c = hex_number(cut_string(str, 16, 8));
-        c_guid->d = hex_number(cut_string(str, 24, 8));
+        guid->a = hex_number(cut_string(str, 0, 8));
+        guid->b = hex_number(cut_string(str, 8, 8));
+        guid->c = hex_number(cut_string(str, 16, 8));
+        guid->d = hex_number(cut_string(str, 24, 8));
     }
 }
 
-bool guid_equal(const FGitGuid* c_guid_a, const FGitGuid* c_guid_b)
+bool guid_equal(const FGitGuid* guid_a, const FGitGuid* guid_b)
 {
-    return c_guid_a->a == c_guid_b->a &&
-        c_guid_a->b == c_guid_b->b &&
-        c_guid_a->c == c_guid_b->c &&
-        c_guid_a->d == c_guid_b->d;
+    return guid_a->a == guid_b->a &&
+        guid_a->b == guid_b->b &&
+        guid_a->c == guid_b->c &&
+        guid_a->d == guid_b->d;
 }
 
-bool guid_equal_str(const char* guid_string, const FGitGuid* c_guid)
+bool guid_equal_str(const char* guid_string, const FGitGuid* guid)
 {
     FGitGuid id;
-    string_to_guid(guid_string, &id);
+    string_to_guid(&id, guid_string);
 
-    return guid_equal(&id, c_guid);
-}
-
-void guid_parse(const char* buf, FGitGuid* c_guid)
-{
-    if (strlen(buf) == 32)
-    {
-        string_to_guid(buf, c_guid);
-    }
+    return guid_equal(&id, guid);
 }

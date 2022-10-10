@@ -8,12 +8,12 @@ static char version_info_file[MAX_PATH] = {0}; // version.info
 static char version_list_file[MAX_PATH] = {0}; // version.list
 
 static char git_cache[MAX_PATH] = {0}; // .git/
-static char git_txt_file[MAX_PATH] = {0}; // git.txt
+static char project_path[MAX_PATH] = {0}; // 项目路径
 
 static char git_client_cache[MAX_PATH] = {0}; // 本地仓库 /git_client/
 static char git_server_cache[MAX_PATH] = {0}; // 远端仓库 /git_server/
 
-static char remote_origin[MAX_PATH] = {0}; // 远端路径 url
+static char server_url[MAX_PATH] = {0}; // 远端路径 url
 
 static char user_ini_file[MAX_PATH] = {0}; // 用户配置信息 user.ini
 

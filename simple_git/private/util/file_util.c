@@ -1,13 +1,13 @@
 #include "../../public/util/file_util.h"
 #include "../../public/util/string_util.h"
 
-void init_def_c_paths(FFilePath* c_paths)
+void init_file_path(FFilePath* file_path)
 {
-    c_paths->index = 0;
-    memset(c_paths->paths, 0, sizeof(c_paths->paths) - 1);
+    file_path->index = 0;
+    memset(file_path->paths, 0, sizeof(file_path->paths) - 1);
 }
 
-int copy_file(const char* Src, const char* Dest)
+int copy_file(const char* Dest, const char* Src)
 {
     //当前的缓存 缓存1MB大小，如果超过就会出问题 这个会在std C课程里面继续扩展
     char Buf[1024 * 1024] = {0};
@@ -36,13 +36,13 @@ int copy_file(const char* Src, const char* Dest)
     return -1;
 }
 
-void find_files(char const* in_path, FFilePath* str, bool b_recursion)
+void find_files(char const* folder_path, FFilePath* out_file_path, bool b_recursion)
 {
     struct _finddata_t finddata;
 
     long hfile = 0;
     char tmp_path[8196] = {0};
-    strcpy(tmp_path, in_path);
+    strcpy(tmp_path, folder_path);
     strcat(tmp_path, "\\*");
     if ((hfile = _findfirst(tmp_path, &finddata)) != -1)
     {
@@ -59,18 +59,18 @@ void find_files(char const* in_path, FFilePath* str, bool b_recursion)
                     }
 
                     char new_path[8196] = {0};
-                    strcpy(new_path, in_path);
+                    strcpy(new_path, folder_path);
                     strcat(new_path, "\\");
                     strcat(new_path, finddata.name);
 
-                    find_files(new_path, str, b_recursion);
+                    find_files(new_path, out_file_path, b_recursion);
                 }
             }
             else
             {
-                strcpy(str->paths[str->index], in_path);
-                strcat(str->paths[str->index], "\\");
-                strcat(str->paths[str->index++], finddata.name);
+                strcpy(out_file_path->paths[out_file_path->index], folder_path);
+                strcat(out_file_path->paths[out_file_path->index], "\\");
+                strcat(out_file_path->paths[out_file_path->index++], finddata.name);
             }
         }
         while (_findnext(hfile, &finddata) == 0);
@@ -78,10 +78,10 @@ void find_files(char const* in_path, FFilePath* str, bool b_recursion)
     }
 }
 
-bool create_file(char const* filename)
+bool create_file(char const* file_path)
 {
     FILE* fp = NULL;
-    if ((fp = fopen(filename, "w+")) != NULL)
+    if ((fp = fopen(file_path, "w+")) != NULL)
     {
         fclose(fp);
 
@@ -126,7 +126,7 @@ bool create_folder_path(char const* folder_path)
     return _access(tmp_path, 0) == 0;
 }
 
-bool read_file(const char* file_path, char* buf)
+bool read_file(const char* file_path, char* out_content)
 {
     FILE* fp = NULL;
     if ((fp = fopen(file_path, "r")) != NULL)
@@ -135,24 +135,24 @@ bool read_file(const char* file_path, char* buf)
         int file_size = 0;
         while ((file_size = fread(buf_tmp, 1, 1024, fp)) > 0)
         {
-            strcat(buf, buf_tmp);
+            strcat(out_content, buf_tmp);
             memset(buf_tmp, 0, sizeof(buf_tmp));
         }
 
         fclose(fp);
 
-        return buf[0] != '\0';
+        return out_content[0] != '\0';
     }
 
     return false;
 }
 
-bool add_file(const char* path, char* buf)
+bool add_file(const char* file_path, char* content)
 {
     FILE* fp = NULL;
-    if ((fp = fopen(path, "a+")) != NULL)
+    if ((fp = fopen(file_path, "a+")) != NULL)
     {
-        fprintf(fp, "%s", buf);
+        fprintf(fp, "%s", content);
         fclose(fp);
 
         return true;
@@ -161,12 +161,12 @@ bool add_file(const char* path, char* buf)
     return false;
 }
 
-bool rewrite_file(const char* file_path, char* buf)
+bool rewrite_file(const char* file_path, char* content)
 {
     FILE* fp = NULL;
     if ((fp = fopen(file_path, "w+")) != NULL)
     {
-        fprintf(fp, "%s", buf);
+        fprintf(fp, "%s", content);
         fclose(fp);
 
         return true;
@@ -175,14 +175,14 @@ bool rewrite_file(const char* file_path, char* buf)
     return false;
 }
 
-unsigned int get_file_size_by_filename(const char* filename)
+unsigned int get_file_size(const char* file_path)
 {
     unsigned int file_size = 0;
 
     FILE* fp = NULL;
-    if ((fp = fopen(filename, "r")) != NULL)
+    if ((fp = fopen(file_path, "r")) != NULL)
     {
-        file_size = get_file_size(fp);
+        file_size = get_file_size_by_handle(fp);
 
         fclose(fp);
     }
@@ -191,7 +191,7 @@ unsigned int get_file_size_by_filename(const char* filename)
 }
 
 //asdoiajoi ajs aoisjd oaisjd oiasjdoi asodao ijaosijd oaisdja index
-unsigned int get_file_size(FILE* file_handle)
+unsigned int get_file_size_by_handle(FILE* file_handle)
 {
     unsigned int file_size = 0;
 
